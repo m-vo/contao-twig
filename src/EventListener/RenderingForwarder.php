@@ -13,6 +13,7 @@ use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\CoreBundle\ServiceAnnotation\Hook;
 use Contao\Template;
 use Contao\TemplateLoader;
+use Mvo\ContaoTwig\Filesystem\TemplateLocator;
 use Twig\Environment;
 use Webmozart\PathUtil\Path;
 
@@ -22,9 +23,10 @@ class RenderingForwarder
     private const TEMPLATE_CONTEXT = 'context';
 
     private Environment $twig;
+    private TemplateLocator $templateLocator;
     private ContaoFramework $framework;
     private string $rootDir;
-    private string $templateDir;
+    private string $environment;
 
     /** @var string[] */
     private array $templatePaths;
@@ -32,12 +34,13 @@ class RenderingForwarder
     /** @var array<string, string> */
     private array $templates = [];
 
-    public function __construct(Environment $twig, ContaoFramework $framework, string $rootDir, string $templateDir)
+    public function __construct(Environment $twig, TemplateLocator $templateLocator, ContaoFramework $framework, string $rootDir, string $environment)
     {
         $this->twig = $twig;
+        $this->templateLocator = $templateLocator;
         $this->framework = $framework;
         $this->rootDir = $rootDir;
-        $this->templateDir = $templateDir;
+        $this->environment = $environment;
     }
 
     public function setTemplatePaths(array $templatePaths): void
@@ -50,6 +53,10 @@ class RenderingForwarder
      */
     public function registerTemplates(): void
     {
+        if ('dev' === $this->environment) {
+            $this->templatePaths = $this->templateLocator->getTwigTemplatePaths();
+        }
+
         foreach ($this->templatePaths as $templatePath) {
             $identifier = Path::getFilenameWithoutExtension($templatePath, '.html.twig');
 
@@ -63,7 +70,7 @@ class RenderingForwarder
             $templateLoader->addFile($identifier, Path::makeRelative($directory, $this->rootDir));
 
             // keep track of the relative path (inside the template path)
-            $this->templates[$identifier] = Path::makeRelative($templatePath, $this->templateDir);
+            $this->templates[$identifier] = $this->templateLocator->getRelativeTemplatePath($templatePath);
         }
     }
 

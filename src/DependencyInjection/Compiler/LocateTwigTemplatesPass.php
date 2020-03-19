@@ -10,9 +10,9 @@ declare(strict_types=1);
 namespace Mvo\ContaoTwig\DependencyInjection\Compiler;
 
 use Mvo\ContaoTwig\EventListener\RenderingForwarder;
+use Mvo\ContaoTwig\Filesystem\TemplateLocator;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\Finder\Finder;
 
 class LocateTwigTemplatesPass implements CompilerPassInterface
 {
@@ -25,15 +25,8 @@ class LocateTwigTemplatesPass implements CompilerPassInterface
         $definition = $container->getDefinition(RenderingForwarder::class);
         $templateDir = $container->getParameter('twig.default_path');
 
-        $templateFiles = (new Finder())
-            ->in($templateDir)
-            ->name('*.twig')
-            ->getIterator();
-
-        $templatePaths = array_map(
-            static fn ($file) => $file->getPathname(),
-            iterator_to_array($templateFiles)
-        );
+        $locator = new TemplateLocator($templateDir);
+        $templatePaths = $locator->getTwigTemplatePaths();
 
         $definition->addMethodCall('setTemplatePaths', [$templatePaths]);
     }

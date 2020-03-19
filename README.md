@@ -14,8 +14,12 @@
    For example put a `ce_downloads.html.twig` file under `templates/Contao`.
  
 3. Rebuild your cache (the filesystem is scanned for templates in a compiler pass).
-   Your new template is now rendered - it has the same context set as the
-   existing Contao one has.
+   
+   **Note**: for a better DX your templates will always
+             be loaded in the *dev* environment.  
+   
+   That's it. Your new template is now rendered instead. It has the same context
+   as the existing Contao one would have (`Template->getData()`). :sparkles:
 
 #### Caveats
 As Contao uses input encoding, you'll need to deal for already encoded variables
