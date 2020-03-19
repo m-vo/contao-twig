@@ -1,0 +1,13 @@
+services:
+  Mvo\ContaoTwig\EventListener\RenderingForwarder:
+    arguments:
+      - '@twig'
+      - '@contao.framework'
+      - '%kernel.project_dir%'
+      - '%twig.default_path%'
+    tags:
+      - { name: 'terminal42_service_annotation' }
+
+  Mvo\ContaoTwig\Twig\ContaoTemplateExtension:
+    tags:
+      - { name: 'twig.extension' }

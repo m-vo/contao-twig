@@ -1,0 +1,61 @@
+{
+  "name": "mvo/contao-twig",
+  "type": "contao-bundle",
+  "description": "Replace your Contao php templates with Twig templates.",
+  "keywords": [
+    "contao",
+    "twig"
+  ],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Moritz Vondano",
+      "homepage": "https://github.com/m-vo/contao-twig"
+    }
+  ],
+  "require": {
+    "php": ">=7.4",
+    "contao/core-bundle": "^4.9",
+    "symfony/twig-bundle": "^4.4",
+    "webmozart/path-util": "^2.3"
+  },
+  "require-dev": {
+    "contao/manager-plugin": "^2.0",
+    "friendsofphp/php-cs-fixer": "^2.16",
+    "phpstan/phpstan": "^0.11.8",
+    "phpunit/phpunit": "^8.0",
+    "contao/test-case": "^4.1"
+  },
+  "conflict": {
+    "contao/manager-plugin": "<2.0 || >=3.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Mvo\\ContaoTwig\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Mvo\\ContaoTwig\\Tests\\": "tests/"
+    }
+  },
+  "extra": {
+    "contao-manager-plugin": "Mvo\\ContaoTwig\\ContaoManager\\Plugin"
+  },
+  "scripts": {
+    "cs": [
+      "vendor/bin/php-cs-fixer fix -v --ansi"
+    ],
+    "phpstan": [
+      "vendor/bin/phpstan analyse src tests --level=7 --ansi"
+    ],
+    "phpunit": [
+      "vendor/bin/phpunit"
+    ],
+    "chain": [
+      "@cs",
+      "@phpstan",
+      "@phpunit"
+    ]
+  }
+}
