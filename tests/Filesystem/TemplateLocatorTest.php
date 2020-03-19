@@ -30,4 +30,15 @@ class TemplateLocatorTest extends TestCase
 
         $this->assertSame($expected, $paths);
     }
+
+    /**
+     * @testWith ["/path/to/project/templates/foo.html.twig", "foo.html.twig"]
+     *           ["/path/to/project/templates/sub/bar.html.twig", "sub/bar.html.twig"]
+     */
+    public function testGetRelativeTemplatePath(string $inputPath, string $outputPath): void
+    {
+        $locator = new TemplateLocator('/path/to/project/templates');
+
+        $this->assertSame($outputPath, $locator->getRelativeTemplatePath($inputPath));
+    }
 }

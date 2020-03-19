@@ -13,6 +13,7 @@ use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\Template;
 use Contao\TemplateLoader;
 use Mvo\ContaoTwig\EventListener\RenderingForwarder;
+use Mvo\ContaoTwig\Filesystem\TemplateLocator;
 use Mvo\ContaoTwig\Tests\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use Twig\Environment;
@@ -23,6 +24,35 @@ class RenderingForwarderTest extends TestCase
     public function testRegistersTemplates(): void
     {
         $renderingForwarder = $this->getRenderingForwarder();
+
+        $renderingForwarder->setTemplatePaths($this->getTemplatePaths());
+        $renderingForwarder->registerTemplates();
+    }
+
+    public function testReloadsTemplatesInDevEnvironment(): void
+    {
+        /** @var TemplateLocator&MockObject $locator */
+        $locator = $this->createMock(TemplateLocator::class);
+        $locator
+            ->expects($this->once())
+            ->method('getTwigTemplatePaths')
+            ->willReturn($this->getTemplatePaths());
+
+        $renderingForwarder = $this->getRenderingForwarder(null, null, $locator, 'dev');
+
+        $renderingForwarder->setTemplatePaths($this->getTemplatePaths());
+        $renderingForwarder->registerTemplates();
+    }
+
+    public function testDoesNotReloadTemplatesInProdEnvironment(): void
+    {
+        /** @var TemplateLocator&MockObject $locator */
+        $locator = $this->createMock(TemplateLocator::class);
+        $locator
+            ->expects($this->never())
+            ->method('getTwigTemplatePaths');
+
+        $renderingForwarder = $this->getRenderingForwarder(null, null, $locator, 'prod');
 
         $renderingForwarder->setTemplatePaths($this->getTemplatePaths());
         $renderingForwarder->registerTemplates();
@@ -196,19 +226,26 @@ class RenderingForwarderTest extends TestCase
         ];
     }
 
-    private function getRenderingForwarder(Environment $twig = null, ContaoFramework $framework = null): RenderingForwarder
-    {
+    private function getRenderingForwarder(
+        Environment $twig = null,
+        ContaoFramework $framework = null,
+        TemplateLocator $locator = null,
+        string $environment = 'prod'
+    ): RenderingForwarder {
         /** @var Environment&MockObject $twig */
         $twig = $twig ?? $this->createMock(Environment::class);
+
+        $locator = $locator ?? new TemplateLocator($this->templateDir);
 
         /** @var ContaoFramework&MockObject $framework */
         $framework = $framework ?? $this->getFrameworkWithTemplateLoader();
 
         return new RenderingForwarder(
             $twig,
+            $locator,
             $framework,
             $this->rootDir,
-            $this->templateDir
+            $environment
         );
     }
 }

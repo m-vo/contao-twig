@@ -6,9 +6,10 @@ services:
   Mvo\ContaoTwig\EventListener\RenderingForwarder:
     arguments:
       - '@twig'
+      - '@Mvo\ContaoTwig\Filesystem\TemplateLocator'
       - '@contao.framework'
       - '%kernel.project_dir%'
-      - '%twig.default_path%'
+      - '%kernel.environment%'
     tags:
       - { name: 'terminal42_service_annotation' }
 
