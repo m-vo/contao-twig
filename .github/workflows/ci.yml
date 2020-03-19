@@ -1,0 +1,30 @@
+name: CI
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup PHP
+        uses: shivammathur/setup-php@master
+        with:
+          php-version: 7.4
+          extensions: dom, fileinfo, filter, gd, hash, intl, json, mbstring, pcre, pdo, zlib
+          tools: prestissimo
+          coverage: none
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: composer update --no-interaction --no-suggest
+
+      - name: Run CS check
+        run: vendor/bin/php-cs-fixer fix --diff --diff-format=udiff --dry-run --ansi
+
+      - name: Run phpstan
+        run: vendor/bin/phpstan analyse src tests --level=7
+
+      - name: Run unit tests
+        run: vendor/bin/phpunit --colors=always
