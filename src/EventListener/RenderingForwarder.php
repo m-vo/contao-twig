@@ -18,6 +18,9 @@ use Webmozart\PathUtil\Path;
 
 class RenderingForwarder
 {
+    private const TWIG_TEMPLATE = 'twig_template';
+    private const TEMPLATE_CONTEXT = 'context';
+
     private Environment $twig;
     private ContaoFramework $framework;
     private string $rootDir;
@@ -28,9 +31,6 @@ class RenderingForwarder
 
     /** @var array<string, string> */
     private array $templates = [];
-
-    /** @var array<string, array> */
-    private array $templateContext = [];
 
     public function __construct(Environment $twig, ContaoFramework $framework, string $rootDir, string $templateDir)
     {
@@ -68,30 +68,40 @@ class RenderingForwarder
     }
 
     /**
-     * @Hook("parseTemplate")
+     * @Hook("parseTemplate", priority=-128)
      */
-    public function storeTemplateContext(Template $template): void
+    public function delegateRendering(Template $contaoTemplate): void
     {
-        $this->templateContext[$template->getName()] = $template->getData();
+        $template = $this->templates[$contaoTemplate->getName()] ?? null;
+
+        if (null === $template) {
+            return;
+        }
+
+        // delegate to our proxy template that will call render()
+        $contaoTemplate->setName('twig_template_proxy');
+
+        $contaoTemplate->setData([
+            self::TWIG_TEMPLATE => $template,
+            self::TEMPLATE_CONTEXT => $contaoTemplate->getData(),
+        ]);
     }
 
-    /**
-     * @Hook("parseFrontendTemplate")
-     */
-    public function forwardRendering(string $buffer, string $identifier): string
+    public function render(Template $contaoTemplate): string
     {
-        $context = $this->templateContext[$identifier] ?? null;
-        $template = $this->templates[$identifier] ?? null;
+        $data = $contaoTemplate->getData();
 
-        if (null === $context || null === $template) {
-            return $buffer;
+        $template = $data[self::TWIG_TEMPLATE] ?? null;
+        $context = $data[self::TEMPLATE_CONTEXT] ?? null;
+
+        if (null === $template) {
+            throw new \InvalidArgumentException("The template's context must contain a value for '".self::TWIG_TEMPLATE."'");
         }
 
         if (!$this->twig->getLoader()->exists($template)) {
-            throw new \RuntimeException("Template '$identifier' ($template) wasn't loaded.");
+            throw new \RuntimeException("Template '$template' wasn't loaded.");
         }
 
-        // drop the current buffer and forward the rendering to twig instead
         return $this->twig->render($template, $context);
     }
 }

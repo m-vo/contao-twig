@@ -41,30 +41,63 @@ class RenderingForwarderTest extends ContaoTestCase
         $renderingForwarder->registerTemplates();
     }
 
-    public function testSkipsForwardRenderingIfTemplateNotRegistered(): void
-    {
-        $renderingForwarder = $this->getRenderingForwarder(null, $this->mockContaoFramework());
-
-        $output = $renderingForwarder->forwardRendering('old buffer', 'text');
-        $this->assertSame('old buffer', $output);
-    }
-
-    public function testSkipsForwardRenderingIfContextWasNotSet(): void
+    public function testSetsProxyTemplate(): void
     {
         $renderingForwarder = $this->getRenderingForwarder();
 
         $renderingForwarder->setTemplatePaths($this->getTemplatePaths());
         $renderingForwarder->registerTemplates();
 
-        $output = $renderingForwarder->forwardRendering(
-            'old buffer',
-            'foo'
-        );
+        /** @var Template&MockObject $template */
+        $template = $this->createMock(Template::class);
+        $template
+            ->expects($this->once())
+            ->method('getName')
+            ->willReturn('bar');
+        $template
+            ->expects($this->once())
+            ->method('setName')
+            ->with('twig_template_proxy');
+        $template
+            ->expects($this->once())
+            ->method('getData')
+            ->willReturn(['a' => 123]);
+        $template
+            ->expects($this->once())
+            ->method('setData')
+            ->with([
+                'twig_template' => 'sub/bar.html.twig',
+                'context' => ['a' => 123],
+            ]);
 
-        $this->assertSame('old buffer', $output);
+        $renderingForwarder->delegateRendering($template);
     }
 
-    public function testForwardRendering(): void
+    public function testSkipsSettingProxyTemplateForUnregisteredTemplates(): void
+    {
+        $renderingForwarder = $this->getRenderingForwarder();
+        $renderingForwarder->setTemplatePaths($this->getTemplatePaths());
+        $renderingForwarder->registerTemplates();
+
+        /** @var Template&MockObject $template */
+        $template = $this->createMock(Template::class);
+        $template
+            ->expects($this->once())
+            ->method('getName')
+            ->willReturn('text');
+
+        $template
+            ->expects($this->never())
+            ->method('setName');
+
+        $template
+            ->expects($this->never())
+            ->method('__set');
+
+        $renderingForwarder->delegateRendering($template);
+    }
+
+    public function testRender(): void
     {
         $twigLoader = $this->createMock(LoaderInterface::class);
         $twigLoader
@@ -85,30 +118,70 @@ class RenderingForwarderTest extends ContaoTestCase
             ->method('getLoader')
             ->willReturn($twigLoader);
 
-        $renderingForwarder = $this->getRenderingForwarder($twig);
-
-        $renderingForwarder->setTemplatePaths($this->getTemplatePaths());
-        $renderingForwarder->registerTemplates();
+        $renderingForwarder = $this->getRenderingForwarder($twig, $this->mockContaoFramework());
 
         /** @var Template&MockObject $template */
         $template = $this->createMock(Template::class);
         $template
             ->expects($this->once())
-            ->method('getName')
-            ->willReturn('bar');
+            ->method('getData')
+            ->willReturn([
+                'twig_template' => 'sub/bar.html.twig',
+                'context' => ['a' => 123],
+            ]);
+
+        $output = $renderingForwarder->render($template);
+
+        $this->assertSame('twig content', $output);
+    }
+
+    public function testRenderThrowsIfTemplateNotSet(): void
+    {
+        $renderingForwarder = $this->getRenderingForwarder(null, $this->mockContaoFramework());
+
+        /** @var Template&MockObject $template */
+        $template = $this->createMock(Template::class);
         $template
             ->expects($this->once())
             ->method('getData')
             ->willReturn(['a' => 123]);
 
-        $renderingForwarder->storeTemplateContext($template);
+        $this->expectExceptionMessage('The template\'s context must contain a value for \'twig_template\'');
 
-        $output = $renderingForwarder->forwardRendering(
-            'old buffer',
-            'bar'
-        );
+        $renderingForwarder->render($template);
+    }
 
-        $this->assertSame('twig content', $output);
+    public function testRenderThrowsIfTemplateWasNotLoaded(): void
+    {
+        $twigLoader = $this->createMock(LoaderInterface::class);
+        $twigLoader
+            ->expects($this->once())
+            ->method('exists')
+            ->with('foobar.html.twig')
+            ->willReturn(false);
+
+        /** @var Environment&MockObject $twig */
+        $twig = $this->createMock(Environment::class);
+        $twig
+            ->expects($this->once())
+            ->method('getLoader')
+            ->willReturn($twigLoader);
+
+        $renderingForwarder = $this->getRenderingForwarder($twig, $this->mockContaoFramework());
+
+        /** @var Template&MockObject $template */
+        $template = $this->createMock(Template::class);
+        $template
+            ->expects($this->once())
+            ->method('getData')
+            ->willReturn([
+                'twig_template' => 'foobar.html.twig',
+                'context' => ['a' => 123],
+            ]);
+
+        $this->expectExceptionMessage('Template \'foobar.html.twig\' wasn\'t loaded.');
+
+        $renderingForwarder->render($template);
     }
 
     /**

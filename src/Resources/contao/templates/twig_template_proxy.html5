@@ -1,0 +1,8 @@
+<?php
+
+use Mvo\ContaoTwig\EventListener\RenderingForwarder;
+
+// This template is just a proxy.
+echo \System::getContainer()
+    ->get(RenderingForwarder::class)
+    ->render($this);
