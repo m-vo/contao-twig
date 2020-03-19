@@ -1,4 +1,8 @@
 services:
+  Mvo\ContaoTwig\Filesystem\TemplateLocator:
+    arguments:
+      - '%twig.default_path%'
+
   Mvo\ContaoTwig\EventListener\RenderingForwarder:
     arguments:
       - '@twig'

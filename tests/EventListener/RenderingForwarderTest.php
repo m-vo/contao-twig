@@ -12,27 +12,14 @@ namespace Mvo\ContaoTwig\Tests\EventListener;
 use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\Template;
 use Contao\TemplateLoader;
-use Contao\TestCase\ContaoTestCase;
 use Mvo\ContaoTwig\EventListener\RenderingForwarder;
+use Mvo\ContaoTwig\Tests\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use Twig\Environment;
 use Twig\Loader\LoaderInterface;
-use Webmozart\PathUtil\Path;
 
-class RenderingForwarderTest extends ContaoTestCase
+class RenderingForwarderTest extends TestCase
 {
-    private string $rootDir;
-
-    private string $templateDir;
-
-    public function setUp(): void
-    {
-        parent::setUp();
-
-        $this->rootDir = Path::canonicalize(__DIR__.'/../Fixtures');
-        $this->templateDir = $this->rootDir.'/templates';
-    }
-
     public function testRegistersTemplates(): void
     {
         $renderingForwarder = $this->getRenderingForwarder();
