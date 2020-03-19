@@ -60,8 +60,15 @@ class RenderingForwarderTest extends ContaoTestCase
             ->with('twig_template_proxy');
         $template
             ->expects($this->once())
-            ->method('__set')
-            ->with('_twig_template', 'sub/bar.html.twig');
+            ->method('getData')
+            ->willReturn(['a' => 123]);
+        $template
+            ->expects($this->once())
+            ->method('setData')
+            ->with([
+                'twig_template' => 'sub/bar.html.twig',
+                'context' => ['a' => 123],
+            ]);
 
         $renderingForwarder->delegateRendering($template);
     }
@@ -118,7 +125,10 @@ class RenderingForwarderTest extends ContaoTestCase
         $template
             ->expects($this->once())
             ->method('getData')
-            ->willReturn(['a' => 123, '_twig_template' => 'sub/bar.html.twig']);
+            ->willReturn([
+                'twig_template' => 'sub/bar.html.twig',
+                'context' => ['a' => 123],
+            ]);
 
         $output = $renderingForwarder->render($template);
 
@@ -136,7 +146,7 @@ class RenderingForwarderTest extends ContaoTestCase
             ->method('getData')
             ->willReturn(['a' => 123]);
 
-        $this->expectExceptionMessage('The template\'s context must contain a value for \'_twig_template\'');
+        $this->expectExceptionMessage('The template\'s context must contain a value for \'twig_template\'');
 
         $renderingForwarder->render($template);
     }
@@ -164,7 +174,10 @@ class RenderingForwarderTest extends ContaoTestCase
         $template
             ->expects($this->once())
             ->method('getData')
-            ->willReturn(['a' => 123, '_twig_template' => 'foobar.html.twig']);
+            ->willReturn([
+                'twig_template' => 'foobar.html.twig',
+                'context' => ['a' => 123],
+            ]);
 
         $this->expectExceptionMessage('Template \'foobar.html.twig\' wasn\'t loaded.');
 

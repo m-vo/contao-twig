@@ -18,7 +18,8 @@ use Webmozart\PathUtil\Path;
 
 class RenderingForwarder
 {
-    private const TWIG_TEMPLATE_KEY = '_twig_template';
+    private const TWIG_TEMPLATE = 'twig_template';
+    private const TEMPLATE_CONTEXT = 'context';
 
     private Environment $twig;
     private ContaoFramework $framework;
@@ -79,20 +80,23 @@ class RenderingForwarder
 
         // delegate to our proxy template that will call render()
         $contaoTemplate->setName('twig_template_proxy');
-        $contaoTemplate->{self::TWIG_TEMPLATE_KEY} = $template;
+
+        $contaoTemplate->setData([
+            self::TWIG_TEMPLATE => $template,
+            self::TEMPLATE_CONTEXT => $contaoTemplate->getData(),
+        ]);
     }
 
     public function render(Template $contaoTemplate): string
     {
-        $context = $contaoTemplate->getData();
+        $data = $contaoTemplate->getData();
 
-        $template = $context[self::TWIG_TEMPLATE_KEY] ?? null;
+        $template = $data[self::TWIG_TEMPLATE] ?? null;
+        $context = $data[self::TEMPLATE_CONTEXT] ?? null;
 
         if (null === $template) {
-            throw new \InvalidArgumentException("The template's context must contain a value for '".self::TWIG_TEMPLATE_KEY."'");
+            throw new \InvalidArgumentException("The template's context must contain a value for '".self::TWIG_TEMPLATE."'");
         }
-
-        unset($context[self::TWIG_TEMPLATE_KEY]);
 
         if (!$this->twig->getLoader()->exists($template)) {
             throw new \RuntimeException("Template '$template' wasn't loaded.");
