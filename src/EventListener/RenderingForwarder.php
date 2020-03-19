@@ -68,7 +68,7 @@ class RenderingForwarder
     }
 
     /**
-     * @Hook("parseTemplate")
+     * @Hook("parseTemplate", priority=-128)
      */
     public function delegateRendering(Template $contaoTemplate): void
     {
