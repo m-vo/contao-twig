@@ -101,6 +101,10 @@ class RenderingForwarder
         $template = $data[self::TWIG_TEMPLATE] ?? null;
         $context = $data[self::TEMPLATE_CONTEXT] ?? null;
 
+        // restore old template context, so that legacy modules are happy
+        // (e.g. ModuleNavigation is checking for Template->items)
+        $contaoTemplate->setData($context);
+
         if (null === $template) {
             throw new \InvalidArgumentException("The template's context must contain a value for '".self::TWIG_TEMPLATE."'");
         }
