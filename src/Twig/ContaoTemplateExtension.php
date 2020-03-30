@@ -18,7 +18,7 @@ class ContaoTemplateExtension extends AbstractExtension
     {
         return [
             // allow executing closures (like they appear in the Contao templates)
-            new TwigFunction('fn', static fn ($closure) => $closure(), ['isSafe' => 'html']),
+            new TwigFunction('fn', static fn ($closure) => $closure(), ['is_safe' => ['html']]),
         ];
     }
 }
