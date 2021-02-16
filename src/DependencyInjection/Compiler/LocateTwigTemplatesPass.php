@@ -25,6 +25,10 @@ class LocateTwigTemplatesPass implements CompilerPassInterface
         $definition = $container->getDefinition(RenderingForwarder::class);
         $templateDir = $container->getParameter('twig.default_path');
 
+        if (!\is_string($templateDir)) {
+            return;
+        }
+
         $locator = new TemplateLocator($templateDir);
         $templatePaths = $locator->getTwigTemplatePaths();
 
