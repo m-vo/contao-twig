@@ -16,7 +16,7 @@ class TestCase extends ContaoTestCase
     protected string $rootDir;
     protected string $templateDir;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
 

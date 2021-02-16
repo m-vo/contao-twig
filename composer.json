@@ -16,7 +16,7 @@
   "require": {
     "php": ">=7.4",
     "contao/core-bundle": "^4.9",
-    "symfony/twig-bundle": "^4.4",
+    "symfony/twig-bundle": "^4.4 || ^5.0",
     "webmozart/path-util": "^2.3"
   },
   "require-dev": {
