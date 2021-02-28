@@ -21,6 +21,7 @@ class RenderingForwarder
 {
     private const TWIG_TEMPLATE = 'twig_template';
     private const TEMPLATE_CONTEXT = 'context';
+    private const CONTAO_TEMPLATE = 'contao_template';
 
     private Environment $twig;
     private TemplateLocator $templateLocator;
@@ -79,7 +80,8 @@ class RenderingForwarder
      */
     public function delegateRendering(Template $contaoTemplate): void
     {
-        $template = $this->templates[$contaoTemplate->getName()] ?? null;
+        $originalName = $contaoTemplate->getName();
+        $template = $this->templates[$originalName] ?? null;
 
         if (null === $template) {
             return;
@@ -91,6 +93,7 @@ class RenderingForwarder
         $contaoTemplate->setData([
             self::TWIG_TEMPLATE => $template,
             self::TEMPLATE_CONTEXT => $contaoTemplate->getData(),
+            self::CONTAO_TEMPLATE => $originalName,
         ]);
     }
 
@@ -100,6 +103,11 @@ class RenderingForwarder
 
         $template = $data[self::TWIG_TEMPLATE] ?? null;
         $context = $data[self::TEMPLATE_CONTEXT] ?? null;
+        $originalName = $data[self::CONTAO_TEMPLATE] ?? '';
+
+        // restore old template name, so that FrontendTemplate sets the right
+        // cache headers in case of fe_* templates
+        $contaoTemplate->setName($originalName);
 
         // restore old template context, so that legacy modules are happy
         // (e.g. ModuleNavigation is checking for Template->items)

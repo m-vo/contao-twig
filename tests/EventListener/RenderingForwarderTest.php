@@ -85,6 +85,7 @@ class RenderingForwarderTest extends TestCase
             ->with([
                 'twig_template' => 'sub/bar.html.twig',
                 'context' => ['a' => 123],
+                'contao_template' => 'bar',
             ]);
 
         $renderingForwarder->delegateRendering($template);
