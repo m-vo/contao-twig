@@ -21,6 +21,34 @@
    That's it. Your new template is now rendered instead. It has the same context
    as the existing Contao one would have (`Template->getData()`). :sparkles:
 
+#### Render event
+The system dispatches an event directly *before* a twig template gets rendered. It 
+allows altering the template context or even the actual template that is going to be 
+rendered:
+
+```yml
+# config/services.yaml
+services:
+    App\EventListener\RenderTemplateListener:
+        tags:
+            - { name: kernel.event_listener, event: 'Mvo\ContaoTwig\Event\RenderTemplateEvent' }
+```
+
+```php
+// App\EventListener\RenderTemplateListener
+
+public function __invoke(\Mvo\ContaoTwig\Event\RenderTemplateEvent  $event): void {
+    $context = $event->getContext(); // the template's context
+    $template = $event->getTemplate(); // the template's name
+    $contaoTemplate = $event->getContaoTemplate(); // the original Contao template
+    
+    // …
+    
+    $event->setTemplate('another-template.html.twig');
+    $event->setContext(array_merge($context, ['foo' => 'bar']));
+}
+```
+
 #### Caveats
 As Contao uses input encoding, you'll need to deal for already encoded variables
 yourself by adding the `|raw` filter. Use with caution and be sure you know what

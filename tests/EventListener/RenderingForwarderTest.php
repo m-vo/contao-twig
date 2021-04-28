@@ -12,10 +12,12 @@ namespace Mvo\ContaoTwig\Tests\EventListener;
 use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\Template;
 use Contao\TemplateLoader;
+use Mvo\ContaoTwig\Event\RenderTemplateEvent;
 use Mvo\ContaoTwig\EventListener\RenderingForwarder;
 use Mvo\ContaoTwig\Filesystem\TemplateLocator;
 use Mvo\ContaoTwig\Tests\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Twig\Environment;
 use Twig\Loader\LoaderInterface;
 
@@ -202,6 +204,57 @@ class RenderingForwarderTest extends TestCase
         $renderingForwarder->render($template);
     }
 
+    public function testDispatchesEventOnRender(): void
+    {
+        $twigLoader = $this->createMock(LoaderInterface::class);
+        $twigLoader
+            ->expects($this->once())
+            ->method('exists')
+            ->with('bar.html.twig')
+            ->willReturn(true);
+
+        /** @var Environment&MockObject $twig */
+        $twig = $this->createMock(Environment::class);
+        $twig
+            ->expects($this->once())
+            ->method('render')
+            ->with('bar.html.twig', ['a' => 999])
+            ->willReturn('twig content');
+        $twig
+            ->method('getLoader')
+            ->willReturn($twigLoader);
+
+        $eventDispatcher = new EventDispatcher();
+
+        $renderingForwarder = $this->getRenderingForwarder(
+            $twig, $this->mockContaoFramework(), null, '', $eventDispatcher
+        );
+
+        /** @var Template&MockObject $template */
+        $template = $this->createMock(Template::class);
+        $template
+            ->method('getData')
+            ->willReturn([
+                'twig_template' => 'foo.html.twig',
+                'context' => ['a' => 123],
+            ]);
+
+        $eventDispatcher->addListener(
+            RenderTemplateEvent::class,
+            function (RenderTemplateEvent $event): void {
+                $this->assertSame('foo.html.twig', $event->getTemplate());
+                $this->assertSame(['a' => 123], $event->getContext());
+
+                $event->setTemplate('bar.html.twig');
+                $event->setContext(['a' => 999]);
+            }
+        );
+
+        $output = $renderingForwarder->render($template);
+
+        $this->assertSame('twig content', $output);
+    }
+
     /**
      * @return ContaoFramework&MockObject
      */
@@ -231,7 +284,8 @@ class RenderingForwarderTest extends TestCase
         Environment $twig = null,
         ContaoFramework $framework = null,
         TemplateLocator $locator = null,
-        string $environment = 'prod'
+        string $environment = 'prod',
+        EventDispatcher $eventDispatcher = null
     ): RenderingForwarder {
         /** @var Environment&MockObject $twig */
         $twig = $twig ?? $this->createMock(Environment::class);
@@ -241,10 +295,13 @@ class RenderingForwarderTest extends TestCase
         /** @var ContaoFramework&MockObject $framework */
         $framework = $framework ?? $this->getFrameworkWithTemplateLoader();
 
+        $eventDispatcher = $eventDispatcher ?? new EventDispatcher();
+
         return new RenderingForwarder(
             $twig,
             $locator,
             $framework,
+            $eventDispatcher,
             $this->rootDir,
             $environment
         );
