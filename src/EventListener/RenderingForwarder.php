@@ -13,7 +13,9 @@ use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\CoreBundle\ServiceAnnotation\Hook;
 use Contao\Template;
 use Contao\TemplateLoader;
+use Mvo\ContaoTwig\Event\RenderTemplateEvent;
 use Mvo\ContaoTwig\Filesystem\TemplateLocator;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Twig\Environment;
 use Webmozart\PathUtil\Path;
 
@@ -26,6 +28,7 @@ class RenderingForwarder
     private Environment $twig;
     private TemplateLocator $templateLocator;
     private ContaoFramework $framework;
+    private EventDispatcher $eventDispatcher;
     private string $rootDir;
     private string $environment;
 
@@ -35,11 +38,12 @@ class RenderingForwarder
     /** @var array<string, string> */
     private array $templates = [];
 
-    public function __construct(Environment $twig, TemplateLocator $templateLocator, ContaoFramework $framework, string $rootDir, string $environment)
+    public function __construct(Environment $twig, TemplateLocator $templateLocator, ContaoFramework $framework, EventDispatcher $eventDispatcher, string $rootDir, string $environment)
     {
         $this->twig = $twig;
         $this->templateLocator = $templateLocator;
         $this->framework = $framework;
+        $this->eventDispatcher = $eventDispatcher;
         $this->rootDir = $rootDir;
         $this->environment = $environment;
     }
@@ -116,6 +120,14 @@ class RenderingForwarder
         if (null === $template) {
             throw new \InvalidArgumentException("The template's context must contain a value for '".self::TWIG_TEMPLATE."'");
         }
+
+        // Dispatch an event that allows altering the data
+        $event = new RenderTemplateEvent($contaoTemplate, $template, $context);
+
+        $this->eventDispatcher->dispatch($event);
+
+        $template = $event->getTemplate();
+        $context = $event->getContext();
 
         if (!$this->twig->getLoader()->exists($template)) {
             throw new \RuntimeException("Template '$template' wasn't loaded.");
